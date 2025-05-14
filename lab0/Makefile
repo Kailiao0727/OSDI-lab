@@ -7,7 +7,7 @@ all: kernel8.img
 a.o: a.S
 	$(ARCH)-gcc -c a.S -o a.o
 
-kernel8.elf: a.S linker.ld
+kernel8.elf: a.o linker.ld
 	$(ARCH)-ld -T linker.ld -o kernel8.elf a.o
 
 kernel8.img: kernel8.elf
