@@ -27,7 +27,7 @@ typedef struct {
   unsigned int checksum;
 } boot_header;
 
-void uart_rcv_kernel(void) {
+int uart_rcv_kernel(void) {
   boot_header header;
   uint8_t *buffer = (uint8_t*)KERNEL_ADDR;
 
@@ -39,12 +39,12 @@ void uart_rcv_kernel(void) {
   /* Check the magic number */
   if (header.magic != HEADER_MAGIC) {
     uart_putc(0x15); // NAK
-    return;
+    return -1;
   }
 
   if(header.size > 0x100000) { // 1MB limit
     uart_puts("Kernel too large\n");
-    return;
+    return -1;
   }
 
   uart_putc(0x06); // ACK
@@ -55,7 +55,7 @@ void uart_rcv_kernel(void) {
   /* Check checksum */
   if(calculate_crc32(buffer, header.size) != header.checksum) {
     uart_puts("Checksum fail\n");
-    return;
+    return -1;
   }
 
   /* Send the kernel to the specified address */
@@ -63,7 +63,7 @@ void uart_rcv_kernel(void) {
 
   uart_puts("Kernel loaded successfully\n");
   // asm volatile("mov sp, %0" : : "r"(KERNEL_ADDR)); // Reset stack
-  return;
+  return 0;
 }
 
 void jump_to_kernel(void) {

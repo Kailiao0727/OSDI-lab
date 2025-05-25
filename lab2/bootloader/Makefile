@@ -1,71 +1,56 @@
-# Toolchain
-CC = aarch64-linux-gnu-gcc
-LD = aarch64-linux-gnu-ld
-OBJCOPY = aarch64-linux-gnu-objcopy
+ARCH = aarch64-linux-gnu
 QEMU = qemu-system-aarch64
+QEMUFLAGS = -machine raspi3b -kernel your_bootloader.img -serial null -serial pty
+QEMUFLAGS2 = -M raspi3b -display none -serial null -serial stdio
 
-# Project structure
-SRC_DIR = .
-BUILD_DIR = build
+CC = $(ARCH)-gcc
+LD = $(ARCH)-ld
+OBJCPY = $(ARCH)-objcopy
 
-# Source files (from your screenshot)
-C_SOURCES = \
-    $(SRC_DIR)/boot.c \
-    $(SRC_DIR)/gpio.c \
-    $(SRC_DIR)/main.c \
-    $(SRC_DIR)/uart.c
-
-ASM_SOURCES = $(SRC_DIR)/start.S
-
-HEADERS = \
-    $(SRC_DIR)/boot.h \
-    $(SRC_DIR)/gpio.h \
-    $(SRC_DIR)/peripherals.h \
-    $(SRC_DIR)/type.h \
-    $(SRC_DIR)/uart.h
-
-# Output files
-TARGET = bootloader
-ELF = $(BUILD_DIR)/$(TARGET).elf
-BIN = $(BUILD_DIR)/$(TARGET).img
-
-# Compiler/linker flags
+INCLUDE = -Iinclude
 CFLAGS = \
     -Wall \
     -nostdlib \
     -nostartfiles \
     -ffreestanding \
     -mgeneral-regs-only \
-    -I$(SRC_DIR) \
-		-g
+    -g \
+    $(INCLUDE)
 
-LDFLAGS = -T $(SRC_DIR)/linker.ld
-ASFLAGS = $(CFLAGS)
+#dir
+SRC_DIR = src
+BUILD_DIR = build
+INCLUDE_DIR = include
 
-# QEMU settings
-QEMU_FLAGS = \
-    -machine raspi3b \
-    -serial null \
-    -serial pty
+C_SOURCES = $(wildcard $(SRC_DIR)/*.c)
+AS_SOURCES = $(SRC_DIR)/start.S
+OBJECTS = $(C_SOURCES:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o) $(AS_SOURCES:$(SRC_DIR)/%.S=$(BUILD_DIR)/%.o)
 
-all: $(BIN)
+all: kernel8.img
 
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
-$(BIN): $(ELF)
-	$(OBJCOPY) -O binary $< $@
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
 
-$(ELF): $(ASM_SOURCES) $(C_SOURCES) $(HEADERS) | $(BUILD_DIR)
-	$(CC) $(CFLAGS) $(ASFLAGS) $(LDFLAGS) $(ASM_SOURCES) $(C_SOURCES) -o $@
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.S | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
 
-run: $(BIN)
-	$(QEMU) $(QEMU_FLAGS) -kernel $(BIN)
+kernel8.elf: $(OBJECTS) linker.ld
+	$(LD) -T linker.ld -o $@ $(OBJECTS)
 
-debug: $(BIN)
-	$(QEMU) $(QEMU_FLAGS) -kernel $(BIN) -S -gdb tcp::1234
+kernel8.img: kernel8.elf
+	$(OBJCPY) -O binary $< $@
 
 clean:
-	rm -rf $(BUILD_DIR)
+	rm -rf $(BUILD_DIR) kernel8.elf kernel8.img
 
-.PHONY: all clean run debug
+run: kernel8.img
+	$(QEMU) $(QEMUFLAGS) -kernel kernel8.img
+
+qemu: kernel8.img
+	$(QEMU) $(QEMUFLAGS2) -kernel kernel8.img
+
+debug: kernel8.img
+	$(QEMU) $(QEMUFLAGS2) -kernel $< -S -s

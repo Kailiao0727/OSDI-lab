@@ -6,10 +6,15 @@
 int main() {
   gpio_init();
   uart_init();
-  uart_puts("Waiting for kernel...\n");
 
-  uart_rcv_kernel();
-  jump_to_kernel();
+  int r = uart_rcv_kernel();
+  if (r == 0) {
+    jump_to_kernel();
+  } 
+  else{
+    while(1) {};
+  }
+  
   uart_puts("Dont print\n");
   
   return 0;
