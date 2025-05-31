@@ -6,7 +6,7 @@ SECTIONS {
   
   __loader_begin = .;
 
-  .text : { *(.text.boot) *(.text) }
+  .text : { KEEP(*(.text.boot)) *(.text) }
 
   .rodata : { *(.rodata) }
 
@@ -26,5 +26,5 @@ SECTIONS {
 
 }
 
-__bss_size = (__bss_end - __bss_begin) >> 3;
-__loader_size = (__loader_end - __loader_begin) >> 3;
+__bss_size = (__bss_end - __bss_begin);
+__loader_size = (__loader_end - __loader_begin);

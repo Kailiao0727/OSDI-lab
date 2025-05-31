@@ -3,7 +3,7 @@
 #include "type.h"
 
 #define HEADER_MAGIC 0x544F4F42
-#define KERNEL_ADDR 0x80000
+#define KERNEL_ADDR 0x81000
 
 /* Send multiple bytes over UART */
 void uart_send_bytes(const uint8_t *data, uint32_t size)
@@ -31,8 +31,6 @@ int uart_rcv_kernel(void) {
   boot_header header;
   uint8_t *buffer = (uint8_t*)KERNEL_ADDR;
 
-  uart_puts("Waiting for kernel...\n");
-
   /* Read the header */
   uart_read_bytes((uint8_t *)&header, sizeof(header));
 
@@ -43,7 +41,7 @@ int uart_rcv_kernel(void) {
   }
 
   if(header.size > 0x100000) { // 1MB limit
-    uart_puts("Kernel too large\n");
+    uart_putc(0x15);
     return -1;
   }
 
@@ -54,19 +52,21 @@ int uart_rcv_kernel(void) {
 
   /* Check checksum */
   if(calculate_crc32(buffer, header.size) != header.checksum) {
-    uart_puts("Checksum fail\n");
+    uart_putc(0x03);
     return -1;
   }
+  uart_putc(0x06);
 
-  /* Send the kernel to the specified address */
   uart_send_bytes(buffer, header.size);
 
-  uart_puts("Kernel loaded successfully\n");
+  // uart_puts("Kernel loaded successfully\n");
+  
   // asm volatile("mov sp, %0" : : "r"(KERNEL_ADDR)); // Reset stack
   return 0;
 }
 
 void jump_to_kernel(void) {
+  uart_puts("Starting Kernel...\n");
   void (*kernel)(void) = (void (*)(void))KERNEL_ADDR;
   kernel();
   uart_puts("Kernel execution finished\n");

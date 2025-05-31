@@ -10,4 +10,7 @@ int uart_rcv_kernel(void);
 void jump_to_kernel(void);
 uint32_t calculate_crc32(const uint8_t *data, uint32_t len);
 
+extern unsigned char __loader_end;
+extern unsigned char __loader_begin;
+
 #endif
