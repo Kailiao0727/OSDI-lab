@@ -17,9 +17,14 @@ INCLUDE_DIR = include
 
 C_SOURCES = $(wildcard $(SRC_DIR)/*.c)
 AS_SOURCES = $(SRC_DIR)/boot.S
+LD_SOURCES = $(SRC_DIR)/linker.ld
 OBJECTS = $(C_SOURCES:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o) $(AS_SOURCES:$(SRC_DIR)/%.S=$(BUILD_DIR)/%.o)
 
-all: kernel8.img
+TARGET = kernel8
+ELF = $(BUILD_DIR)/$(TARGET).elf
+BIN = $(BUILD_DIR)/$(TARGET).img
+
+all: BIN
 
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
@@ -30,20 +35,20 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c | $(BUILD_DIR)
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.S | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-kernel8.elf: $(OBJECTS) linker.ld
-	$(LD) -T linker.ld -o $@ $(OBJECTS)
+$(ELF): $(OBJECTS) $(LD_SOURCES)
+	$(LD) -T $(LD_SOURCES) -o $@ $(OBJECTS)
 
-kernel8.img: kernel8.elf
+$(BIN): $(ELF)
 	$(OBJCPY) -O binary $< $@
 
 clean:
-	rm -rf $(BUILD_DIR) kernel8.elf kernel8.img
+	rm -rf $(BUILD_DIR) $(ELF) $(BIN)
 
-qemu: kernel8.img
-	$(QEMU) $(QEMUFLAGS) -kernel kernel8.img
+qemu: $(BIN)
+	$(QEMU) $(QEMUFLAGS) -kernel $(BIN)
 
-qemu-uart: kernel8.img
-	$(QEMU) $(QEMUFLAGS2) -kernel kernel8.img
+run: $(BIN)
+	$(QEMU) $(QEMUFLAGS2) -initrd initramfs.cpio -kernel $(BIN)
 
-debug: kernel8.img
-	$(QEMU) $(QEMUFLAGS2) -kernel $< -S -s
+debug: $(BIN)
+	$(QEMU) $(QEMUFLAGS2) -initrd initramfs.cpio -kernel $< -S -s

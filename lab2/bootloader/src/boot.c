@@ -3,7 +3,7 @@
 #include "type.h"
 
 #define HEADER_MAGIC 0x544F4F42
-#define KERNEL_ADDR 0x81000
+#define KERNEL_ADDR 0x80000
 
 /* Send multiple bytes over UART */
 void uart_send_bytes(const uint8_t *data, uint32_t size)

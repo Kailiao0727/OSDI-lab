@@ -2,13 +2,16 @@
 #include "mailbox.h"
 #include "uart.h"
 #include "utils.h"
+#include "cpio.h"
 
 const Command commands[] = {
   {"help", cmd_help}, 
   {"hello", cmd_hello},
   {"mailbox", cmd_mailbox},
   {"reboot", cmd_reboot},
-  {"NULL", cmd_null}
+  {"ls", cmd_ls},
+  {"cat", cmd_cat},
+  {"NULL", cmd_null},
 };
 
 void cmd_null() {
@@ -62,4 +65,16 @@ void qemu_reboot(void) {
 
 void cmd_reboot() {
     reset(100);
+}
+
+void cmd_ls() {
+  cpio_ls();
+}
+
+#define CMD_LEN 128
+void cmd_cat() {
+  uart_puts("Filename: ");
+  char* filename;
+  uart_gets(filename, CMD_LEN);
+  cpio_cat(filename);
 }

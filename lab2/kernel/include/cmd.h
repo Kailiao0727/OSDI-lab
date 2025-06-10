@@ -16,5 +16,7 @@ void cmd_null();
 void reset(int);
 void set(long, unsigned int);
 void qemu_reboot();
+void cmd_ls();
+void cmd_cat();
 
 #endif
